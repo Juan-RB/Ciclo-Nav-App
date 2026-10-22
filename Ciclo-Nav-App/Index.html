@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CicloNav Pro - CRVPR2</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --card-bg: rgba(26, 26, 26, 0.95);
+            --accent-orange: #FF9800;
+            --accent-green: #00E676;
+            --text-main: #FFFFFF;
+            --text-sub: #AAAAAA;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+            background: var(--bg-dark);
+            color: var(--text-main);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* HUD Superior con Status GPS y Control Pantalla */
+        .top-bar {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            padding: 10px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .brand-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--accent-orange);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            background: rgba(0, 230, 118, 0.15);
+            color: var(--accent-green);
+            padding: 4px 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 230, 118, 0.3);
+        }
+
+        /* Panel Inferior Móvil (Bottom Sheet) */
+        .bottom-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 16px 20px calc(20px + env(safe-area-inset-bottom));
+            box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 40vh;
+            transition: transform 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
+        }
+
+        .sheet-handle {
+            width: 36px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            align-self: center;
+            margin-bottom: 4px;
+        }
+
+        .stop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stop-code {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--accent-orange);
+        }
+
+        .stop-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .materials-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            padding: 12px 14px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            max-height: 140px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            white-space: pre-line;
+        }
+
+        .action-bar {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-action {
+            background: var(--accent-orange);
+            color: #000;
+            border: none;
+            padding: 12px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-action-sec {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="top-bar">
+        <div class="brand-title">🚲 CicloNav PR2</div>
+        <div class="status-badge" id="gps-status">GPS Activo</div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div class="stop-header">
+            <div>
+                <span class="stop-code" id="stop-code">D1</span>
+                <div class="stop-name" id="stop-name">Av. El Cerro / PdV Norte</div>
+            </div>
+            <span id="dist-tag" style="font-size: 0.8rem; color: var(--accent-green); font-weight: 600;">-- m</span>
+        </div>
+        <div class="materials-card" id="materials-content">
+            • 6 Conos
+            • 2 Vallas "CALLE CERRADA"
+
+            ⚠️ Instrucción:
+            1. Colocar 1 valla en Av. El Cerro con M. Carlos Casanueva.
+            2. 3 conos en diagonal detrás del camión.
+        </div>
+        <div class="action-bar">
+            <button class="btn-action" onclick="centerGPS()">🎯 Centrar GPS</button>
+            <button class="btn-action btn-action-sec" onclick="toggleSimulador()">🚴 Simulador</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const stopsData = [
+            { id: "D1", name: "Av. El Cerro / PdV Norte", latLng: [-33.41547, -70.61740], items: "• 6 Conos\n• 2 Vallas 'CALLE CERRADA'\n\n💡 Instr: 1 valla en El Cerro c/ Casanueva. 3 conos en diagonal detrás del camión." },
+            { id: "D2", name: "PdV Norte / Los Misioneros", latLng: [-33.41616, -70.61706], items: "• 4 Conos" },
+            { id: "D3", name: "PdV Norte / Los Navegantes", latLng: [-33.41687, -70.61671], items: "• 4 Conos\n• 2 Vallas 'CALLE CERRADA'" },
+            { id: "D4", name: "PdV Norte / El Comendador", latLng: [-33.41756, -70.61638], items: "• 4 Conos" },
+            { id: "D5", name: "PdV Norte / Los Conquistadores", latLng: [-33.41820, -70.61606], items: "• 8 Conos\n• 2 Vallas 'CALLE CERRADA'\n• 1 Paleta PARE" },
+            { id: "D6", name: "PdV Norte / Los Españoles", latLng: [-33.41911, -70.61561], items: "• 4 Conos" },
+            { id: "D7", name: "PdV Norte / Santa María", latLng: [-33.42003, -70.61515], items: "• 5 Conos\n• 2 Vallas 'CALLE CERRADA'\n• 1 Valla 'Usuarios / Autos'\n• 1 Paleta PARE" },
+            { id: "D8", name: "Andrés Bello / Pedro de Valdivia", latLng: [-33.42187, -70.61415], items: "• 20 Conos\n• 1 Barrera Auspicios\n• 1 Barrera CicloRecreoVía\n• 4 Vallas CALLE CERRADA\n• 1 Paleta PARE\n• 1 Tambor" },
+            { id: "D9", name: "Andrés Bello / Orrego Luco", latLng: [-33.42226, -70.61535], items: "• 5 Conos" },
+            { id: "D10", name: "Andrés Bello / Las Urbinas", latLng: [-33.42250, -70.61612], items: "• 5 Conos" },
+            { id: "D11", name: "Andrés Bello / A. de Fuenzalida", latLng: [-33.42267, -70.61690], items: "• 2 Conos" },
+            { id: "D12", name: "Andrés Bello / Ricardo Lyon", latLng: [-33.42288, -70.61773], items: "• 14 Conos\n• 1 Barrera Auspicios\n• 1 Valla CALLE CERRADA" },
+            { id: "D13", name: "Andrés Bello / Sta. Magdalena", latLng: [-33.42307, -70.61828], items: "• 5 Conos" },
+            { id: "D14", name: "Andrés Bello / General Holley", latLng: [-33.42327, -70.61880], items: "• 3 Conos" },
+            { id: "D15", name: "Andrés Bello / Suecia", latLng: [-33.42347, -70.61926], items: "• 14 Conos\n• 1 Barrera Auspicios\n• 1 Paleta PARE" },
+            { id: "D16", name: "General Holley / Bucarest", latLng: [-33.42360, -70.61955], items: "• 1 Barrera 'Calle Cerrada Sin Acceso a A. Bello'\n• 1 Barrera 'A CENCO Costanera por Suecia'" },
+            { id: "D17", name: "Andrés Bello / Bucarest", latLng: [-33.42383, -70.61999], items: "• 4 Conos\n• 2 Vallas CALLE CERRADA" },
+            { id: "D18", name: "Andrés Bello / Los Leones", latLng: [-33.42421, -70.62061], items: "• 27 Conos\n• 2 Vallas CALLE CERRADA\n• 25 Conectores\n• 1 Paleta PARE" },
+            { id: "D19", name: "Andrés Bello / Entrada Jumbo", latLng: [-33.42469, -70.62124], items: "• 10 Conos" },
+            { id: "D20", name: "Andrés Bello / Pórtico", latLng: [-33.42523, -70.62163], items: "• 10 Conos" },
+            { id: "D21", name: "Andrés Bello / Escultura", latLng: [-33.42594, -70.62193], items: "• 10 Conos" },
+            { id: "D22", name: "Andrés Bello / Nueva Tobalaba", latLng: [-33.42663, -70.62221], items: "• 22 Conos\n• 2 Vallas CALLE CERRADA\n• 1 Valla Usuario/Auto\n• 1 Paleta PARE" },
+            { id: "D23", name: "Andrés Bello / Nueva Tajamar", latLng: [-33.42730, -70.62244], items: "• 32 Conos\n• 1 Barrera Desvío\n• 1 Barrera Calle Cerrada\n• 1 Barrera Dirección\n• 2 Vallas CALLE CERRADA\n• 1 Valla Usuarios/Autos" },
+            { id: "D24", name: "Andrés Bello / Entrada Caletera", latLng: [-33.42813, -70.62272], items: "• 16 Conos\n• 1 Valla Máxima 40\n• 1 Valla Desvío 100M\n• 2 Barreras" },
+            { id: "D25", name: "Andrés Bello / Francisco Noguera", latLng: [-33.42888, -70.62306], items: "• 24 Conos\n• 3 Vallas CALLE CERRADA\n• 10 Conectores" },
+            { id: "D26", name: "Andrés Bello / M. Sótero Sánz", latLng: [-33.42954, -70.62388], items: "• 20 Conos" },
+            { id: "D27", name: "Andrés Bello / La Concepción", latLng: [-33.43017, -70.62447], items: "• 12 Conos\n• 1 Barrera Auspicios\n• 1 Paleta PARE" },
+            { id: "D28", name: "Andrés Bello / Padre Mariano", latLng: [-33.43074, -70.62489], items: "• 5 Conos\n• 1 Valla CALLE CERRADA" },
+            { id: "D29", name: "Andrés Bello / Antonio Bellet", latLng: [-33.43160, -70.62563], items: "• 7 Conos\n• 1 Valla CALLE CERRADA\n\n💡 Cerrar salida sur y armar curva en calzada norte." },
+            { id: "D30", name: "Andrés Bello / Gral. Calderón", latLng: [-33.43222, -70.62626], items: "• 4 Conos\n• 1 Barrera Auspicios\n• 1 Valla CALLE CERRADA" },
+            { id: "D31", name: "Andrés Bello / Almte. Pastene", latLng: [-33.43278, -70.62688], items: "• 4 Conos" },
+            { id: "D32", name: "Andrés Bello / Manuel Montt", latLng: [-33.43327, -70.62744], items: "• 3 Conos" },
+            { id: "D33", name: "Andrés Bello / Pérez Valenzuela", latLng: [-33.43372, -70.62806], items: "• 2 Conos\n• 1 Barrera CicloRecreoVía" },
+            { id: "D34", name: "Andrés Bello / Huelén", latLng: [-33.43433, -70.62924], items: "• 26 Conos\n• 3 Barreras CicloRecreoVía\n• 3 Vallas CALLE CERRADA" },
+            { id: "D35", name: "Andrés Bello / Pte. Arzobispo", latLng: [-33.43482, -70.63029], items: "• 8 Conos\n• 2 Vallas CALLE CERRADA" },
+            { id: "D36", name: "Andrés Bello / Pío Nono", latLng: [-33.43631, -70.63537], items: "• 15 Conos\n• 2 Vallas CALLE CERRADA\n• 1 Paleta PARE" },
+            { id: "D37", name: "J.M. Caro / Purísima", latLng: [-33.43569, -70.63834], items: "• 14 Conos\n• 2 Vallas CALLE CERRADA" },
+            { id: "D38", name: "J.M. Caro / J.M. de la Barra", latLng: [-33.43467, -70.64281], items: "• 6 Conos\n• 1 Barrera FIN CICLORECREOVIA" }
+        ];
+
+        let map, userMarker, markers = [];
+        let simInterval = null, simIndex = 0;
+
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    await navigator.wakeLock.request('screen');
+                }
+            } catch (err) { console.log('Wake Lock no activo'); }
+        }
+
+        function initMap() {
+            map = L.map('map', { zoomControl: false }).setView([-33.424, -70.620], 14);
+
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: 'Esri'
+            }).addTo(map);
+
+            renderStops();
+            selectStop("D1");
+            startGPS();
+            requestWakeLock();
+        }
+
+        function renderStops() {
+            const polyCoords = [];
+            stopsData.forEach((stop) => {
+                polyCoords.push(stop.latLng);
+
+                const marker = L.circleMarker(stop.latLng, {
+                    radius: 8,
+                    fillColor: '#FF9800',
+                    color: '#FFF',
+                    weight: 2,
+                    fillOpacity: 0.9
+                }).addTo(map);
+
+                marker.on('click', () => selectStop(stop.id));
+                markers.push({ id: stop.id, marker });
+            });
+
+            L.polyline(polyCoords, { color: '#FF9800', weight: 5, opacity: 0.8 }).addTo(map);
+        }
+
+        function selectStop(id) {
+            const stop = stopsData.find(s => s.id === id);
+            if (!stop) return;
+
+            document.getElementById("stop-code").innerText = stop.id;
+            document.getElementById("stop-name").innerText = stop.name;
+            document.getElementById("materials-content").innerText = stop.items;
+
+            map.panTo(stop.latLng);
+        }
+
+        function checkProximity(userLatLng) {
+            stopsData.forEach((stop) => {
+                const dist = map.distance(userLatLng, stop.latLng);
+                const markerObj = markers.find(m => m.id === stop.id);
+
+                if (dist <= 45) {
+                    if (markerObj) {
+                        markerObj.marker.setStyle({ fillColor: '#00E676', radius: 12, fillOpacity: 1 });
+                    }
+                    selectStop(stop.id);
+                    document.getElementById("dist-tag").innerText = "📍 En Punto";
+                } else {
+                    if (markerObj) {
+                        markerObj.marker.setStyle({ fillColor: '#FF9800', radius: 8, fillOpacity: 0.9 });
+                    }
+                }
+            });
+        }
+
+        function startGPS() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.watchPosition(
+                    (pos) => {
+                        const userLatLng = [pos.coords.latitude, pos.coords.longitude];
+                        if (!userMarker) {
+                            userMarker = L.circleMarker(userLatLng, { radius: 10, fillColor: '#2196F3', color: '#FFF', weight: 3, fillOpacity: 1 }).addTo(map);
+                        } else {
+                            userMarker.setLatLng(userLatLng);
+                        }
+                        checkProximity(userLatLng);
+                    },
+                    () => { document.getElementById("gps-status").innerText = "Sin GPS"; },
+                    { enableHighAccuracy: true }
+                );
+            }
+        }
+
+        function centerGPS() {
+            if (userMarker) map.setView(userMarker.getLatLng(), 16);
+        }
+
+        function toggleSimulador() {
+            if (simInterval) {
+                clearInterval(simInterval);
+                simInterval = null;
+            } else {
+                simIndex = 0;
+                simInterval = setInterval(() => {
+                    if (simIndex < stopsData.length) {
+                        const targetPt = stopsData[simIndex].latLng;
+                        if (!userMarker) {
+                            userMarker = L.circleMarker(targetPt, { radius: 10, fillColor: '#2196F3', color: '#FFF', weight: 3, fillOpacity: 1 }).addTo(map);
+                        } else {
+                            userMarker.setLatLng(targetPt);
+                        }
+                        checkProximity(targetPt);
+                        simIndex++;
+                    } else {
+                        clearInterval(simInterval);
+                        simInterval = null;
+                    }
+                }, 2000);
+            }
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+
+</html>
