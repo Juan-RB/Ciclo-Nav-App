@@ -171,46 +171,50 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Coordenadas reales corregidas según trazado exacto de las calles en Santiago
         const stopsData = [
-            { id: "D1", name: "Av. El Cerro / PdV Norte", latLng: [-33.41547, -70.61740], items: "• 6 Conos\n• 2 Vallas 'CALLE CERRADA'\n\n💡 Instr: 1 valla en El Cerro c/ Casanueva. 3 conos en diagonal detrás del camión." },
-            { id: "D2", name: "PdV Norte / Los Misioneros", latLng: [-33.41616, -70.61706], items: "• 4 Conos" },
-            { id: "D3", name: "PdV Norte / Los Navegantes", latLng: [-33.41687, -70.61671], items: "• 4 Conos\n• 2 Vallas 'CALLE CERRADA'" },
-            { id: "D4", name: "PdV Norte / El Comendador", latLng: [-33.41756, -70.61638], items: "• 4 Conos" },
-            { id: "D5", name: "PdV Norte / Los Conquistadores", latLng: [-33.41820, -70.61606], items: "• 8 Conos\n• 2 Vallas 'CALLE CERRADA'\n• 1 Paleta PARE" },
-            { id: "D6", name: "PdV Norte / Los Españoles", latLng: [-33.41911, -70.61561], items: "• 4 Conos" },
-            { id: "D7", name: "PdV Norte / Santa María", latLng: [-33.42003, -70.61515], items: "• 5 Conos\n• 2 Vallas 'CALLE CERRADA'\n• 1 Valla 'Usuarios / Autos'\n• 1 Paleta PARE" },
-            { id: "D8", name: "Andrés Bello / Pedro de Valdivia", latLng: [-33.42187, -70.61415], items: "• 20 Conos\n• 1 Barrera Auspicios\n• 1 Barrera CicloRecreoVía\n• 4 Vallas CALLE CERRADA\n• 1 Paleta PARE\n• 1 Tambor" },
-            { id: "D9", name: "Andrés Bello / Orrego Luco", latLng: [-33.42128, -70.61287], items: "• 5 Conos" },
-            { id: "D10", name: "Andrés Bello / Las Urbinas", latLng: [-33.42080, -70.61202], items: "• 5 Conos" },
-            { id: "D11", name: "Andrés Bello / A. de Fuenzalida", latLng: [-33.42026, -70.61122], items: "• 2 Conos" },
-            { id: "D12", name: "Andrés Bello / Ricardo Lyon", latLng: [-33.41977, -70.61054], items: "• 14 Conos\n• 1 Barrera Auspicios\n• 1 Valla CALLE CERRADA" },
-            { id: "D13", name: "Andrés Bello / Sta. Magdalena", latLng: [-33.41942, -70.61010], items: "• 5 Conos" },
-            { id: "D14", name: "Andrés Bello / General Holley", latLng: [-33.41919, -70.60982], items: "• 3 Conos" },
-            { id: "D15", name: "Andrés Bello / Suecia", latLng: [-33.41883, -70.60943], items: "• 14 Conos\n• 1 Barrera Auspicios\n• 1 Paleta PARE" },
-            { id: "D16", name: "General Holley / Bucarest", latLng: [-33.41871, -70.60931], items: "• 1 Barrera 'Calle Cerrada Sin Acceso a A. Bello'\n• 1 Barrera 'A CENCO Costanera por Suecia'" },
-            { id: "D17", name: "Andrés Bello / Bucarest", latLng: [-33.41853, -70.60911], items: "• 4 Conos\n• 2 Vallas CALLE CERRADA" },
-            { id: "D18", name: "Andrés Bello / Los Leones", latLng: [-33.41812, -70.60873], items: "• 27 Conos\n• 2 Vallas CALLE CERRADA\n• 25 Conectores\n• 1 Paleta PARE" },
-            { id: "D19", name: "Andrés Bello / Entrada Jumbo", latLng: [-33.41786, -70.60848], items: "• 10 Conos" },
-            { id: "D20", name: "Andrés Bello / Pórtico", latLng: [-33.41763, -70.60825], items: "• 10 Conos" },
-            { id: "D21", name: "Andrés Bello / Escultura", latLng: [-33.41724, -70.60788], items: "• 10 Conos" },
-            { id: "D22", name: "Andrés Bello / Nueva Tobalaba", latLng: [-33.41658, -70.60728], items: "• 22 Conos\n• 2 Vallas CALLE CERRADA\n• 1 Valla Usuario/Auto\n• 1 Paleta PARE" },
-            { id: "D23", name: "Andrés Bello / Nueva Tajamar", latLng: [-33.41588, -70.60660], items: "• 32 Conos\n• 1 Barrera Desvío\n• 1 Barrera Calle Cerrada\n• 1 Barrera Dirección\n• 2 Vallas CALLE CERRADA\n• 1 Valla Usuarios/Autos" },
-            { id: "D24", name: "Andrés Bello / Entrada Caletera (Titanium)", latLng: [-33.41475, -70.60551], items: "• 16 Conos\n• 1 Valla Máxima 40\n• 1 Valla Desvío 100M\n• 2 Barreras" },
-            { id: "D25", name: "Andrés Bello / Francisco Noguera", latLng: [-33.42226, -70.61535], items: "• 24 Conos\n• 3 Vallas CALLE CERRADA\n• 10 Conectores" },
-            { id: "D26", name: "Andrés Bello / M. Sótero Sánz", latLng: [-33.42263, -70.61612], items: "• 20 Conos" },
-            { id: "D27", name: "Andrés Bello / La Concepción", latLng: [-33.42288, -70.61773], items: "• 12 Conos\n• 1 Barrera Auspicios\n• 1 Paleta PARE" },
-            { id: "D28", name: "Andrés Bello / Padre Mariano", latLng: [-33.42347, -70.61926], items: "• 5 Conos\n• 1 Valla CALLE CERRADA" },
-            { id: "D29", name: "Andrés Bello / Antonio Bellet", latLng: [-33.42421, -70.62061], items: "• 7 Conos\n• 1 Valla CALLE CERRADA\n\n💡 Cerrar salida sur y armar curva en calzada norte." },
-            { id: "D30", name: "Andrés Bello / Gral. Calderón", latLng: [-33.42663, -70.62221], items: "• 4 Conos\n• 1 Barrera Auspicios\n• 1 Valla CALLE CERRADA" },
-            { id: "D31", name: "Andrés Bello / Almte. Pastene", latLng: [-33.42813, -70.62272], items: "• 4 Conos" },
-            { id: "D32", name: "Andrés Bello / Manuel Montt", latLng: [-33.42954, -70.62388], items: "• 3 Conos" },
-            { id: "D33", name: "Andrés Bello / Pérez Valenzuela", latLng: [-33.43074, -70.62489], items: "• 2 Conos\n• 1 Barrera CicloRecreoVía" },
-            { id: "D34", name: "Andrés Bello / Huelén", latLng: [-33.43222, -70.62626], items: "• 26 Conos\n• 3 Barreras CicloRecreoVía\n• 3 Vallas CALLE CERRADA" },
-            { id: "D35", name: "Andrés Bello / Pte. Arzobispo", latLng: [-33.43433, -70.62924], items: "• 8 Conos\n• 2 Vallas CALLE CERRADA" },
-            { id: "D36", name: "Andrés Bello / Pío Nono", latLng: [-33.43631, -70.63537], items: "• 15 Conos\n• 2 Vallas CALLE CERRADA\n• 1 Paleta PARE" },
-            { id: "D37", name: "J.M. Caro / Purísima", latLng: [-33.43569, -70.63834], items: "• 14 Conos\n• 2 Vallas CALLE CERRADA" },
-            { id: "D38", name: "J.M. Caro / J.M. de la Barra", latLng: [-33.43467, -70.64281], items: "• 6 Conos\n• 1 Barrera FIN CICLORECREOVIA" }
+            // TRAMO 1: Pedro de Valdivia Norte (D1 - D7)
+            { id: "D1", tramo: 1, name: "Av. El Cerro / PdV Norte", latLng: [-33.41547, -70.61740], items: "• 6 Conos\n• 2 Vallas 'CALLE CERRADA'\n\n💡 Instr: 1 valla en El Cerro c/ Casanueva. 3 conos en diagonal detrás del camión." },
+            { id: "D2", tramo: 1, name: "PdV Norte / Los Misioneros", latLng: [-33.41616, -70.61706], items: "• 4 Conos" },
+            { id: "D3", tramo: 1, name: "PdV Norte / Los Navegantes", latLng: [-33.41687, -70.61671], items: "• 4 Conos\n• 2 Vallas 'CALLE CERRADA'" },
+            { id: "D4", tramo: 1, name: "PdV Norte / El Comendador", latLng: [-33.41756, -70.61638], items: "• 4 Conos" },
+            { id: "D5", tramo: 1, name: "PdV Norte / Los Conquistadores", latLng: [-33.41820, -70.61606], items: "• 8 Conos\n• 2 Vallas 'CALLE CERRADA'\n• 1 Paleta PARE" },
+            { id: "D6", tramo: 1, name: "PdV Norte / Los Españoles", latLng: [-33.41911, -70.61561], items: "• 4 Conos" },
+            { id: "D7", tramo: 1, name: "PdV Norte / Santa María", latLng: [-33.42003, -70.61515], items: "• 5 Conos\n• 2 Vallas 'CALLE CERRADA'\n• 1 Valla 'Usuarios / Autos'\n• 1 Paleta PARE" },
+
+            // TRAMO 2: Andrés Bello Oriente / Subida Titanium (D8 - D24)
+            { id: "D8", tramo: 2, name: "Andrés Bello / Pedro de Valdivia", latLng: [-33.42187, -70.61415], items: "• 20 Conos\n• 1 Barrera Auspicios\n• 1 Barrera CicloRecreoVía\n• 4 Vallas CALLE CERRADA\n• 1 Paleta PARE\n• 1 Tambor" },
+            { id: "D9", tramo: 2, name: "Andrés Bello / Orrego Luco", latLng: [-33.42128, -70.61287], items: "• 5 Conos" },
+            { id: "D10", tramo: 2, name: "Andrés Bello / Las Urbinas", latLng: [-33.42080, -70.61202], items: "• 5 Conos" },
+            { id: "D11", tramo: 2, name: "Andrés Bello / A. de Fuenzalida", latLng: [-33.42026, -70.61122], items: "• 2 Conos" },
+            { id: "D12", tramo: 2, name: "Andrés Bello / Ricardo Lyon", latLng: [-33.41977, -70.61054], items: "• 14 Conos\n• 1 Barrera Auspicios\n• 1 Valla CALLE CERRADA" },
+            { id: "D13", tramo: 2, name: "Andrés Bello / Sta. Magdalena", latLng: [-33.41942, -70.61010], items: "• 5 Conos" },
+            { id: "D14", tramo: 2, name: "Andrés Bello / General Holley", latLng: [-33.41919, -70.60982], items: "• 3 Conos" },
+            { id: "D15", tramo: 2, name: "Andrés Bello / Suecia", latLng: [-33.41883, -70.60943], items: "• 14 Conos\n• 1 Barrera Auspicios\n• 1 Paleta PARE" },
+            { id: "D16", tramo: 2, name: "General Holley / Bucarest", latLng: [-33.41871, -70.60931], items: "• 1 Barrera 'Calle Cerrada Sin Acceso a A. Bello'\n• 1 Barrera 'A CENCO Costanera por Suecia'" },
+            { id: "D17", tramo: 2, name: "Andrés Bello / Bucarest", latLng: [-33.41853, -70.60911], items: "• 4 Conos\n• 2 Vallas CALLE CERRADA" },
+            { id: "D18", tramo: 2, name: "Andrés Bello / Los Leones", latLng: [-33.41812, -70.60873], items: "• 27 Conos\n• 2 Vallas CALLE CERRADA\n• 25 Conectores\n• 1 Paleta PARE" },
+            { id: "D19", tramo: 2, name: "Andrés Bello / Entrada Jumbo", latLng: [-33.41786, -70.60848], items: "• 10 Conos" },
+            { id: "D20", tramo: 2, name: "Andrés Bello / Pórtico", latLng: [-33.41763, -70.60825], items: "• 10 Conos" },
+            { id: "D21", tramo: 2, name: "Andrés Bello / Escultura", latLng: [-33.41724, -70.60788], items: "• 10 Conos" },
+            { id: "D22", tramo: 2, name: "Andrés Bello / Nueva Tobalaba", latLng: [-33.41658, -70.60728], items: "• 22 Conos\n• 2 Vallas CALLE CERRADA\n• 1 Valla Usuario/Auto\n• 1 Paleta PARE" },
+            { id: "D23", tramo: 2, name: "Andrés Bello / Nueva Tajamar", latLng: [-33.41588, -70.60660], items: "• 32 Conos\n• 1 Barrera Desvío\n• 1 Barrera Calle Cerrada\n• 1 Barrera Dirección\n• 2 Vallas CALLE CERRADA\n• 1 Valla Usuarios/Autos" },
+            { id: "D24", tramo: 2, name: "Andrés Bello / Entrada Caletera (Titanium)", latLng: [-33.41475, -70.60551], items: "• 16 Conos\n• 1 Valla Máxima 40\n• 1 Valla Desvío 100M\n• 2 Barreras" },
+
+            // TRAMO 3: Andrés Bello Bajada / Cardenal Caro (D25 - D38)
+            { id: "D25", tramo: 3, name: "Andrés Bello / Francisco Noguera", latLng: [-33.42226, -70.61535], items: "• 24 Conos\n• 3 Vallas CALLE CERRADA\n• 10 Conectores" },
+            { id: "D26", tramo: 3, name: "Andrés Bello / M. Sótero Sánz", latLng: [-33.42263, -70.61612], items: "• 20 Conos" },
+            { id: "D27", tramo: 3, name: "Andrés Bello / La Concepción", latLng: [-33.42288, -70.61773], items: "• 12 Conos\n• 1 Barrera Auspicios\n• 1 Paleta PARE" },
+            { id: "D28", tramo: 3, name: "Andrés Bello / Padre Mariano", latLng: [-33.42347, -70.61926], items: "• 5 Conos\n• 1 Valla CALLE CERRADA" },
+            { id: "D29", tramo: 3, name: "Andrés Bello / Antonio Bellet", latLng: [-33.42421, -70.62061], items: "• 7 Conos\n• 1 Valla CALLE CERRADA\n\n💡 Cerrar salida sur y armar curva en calzada norte." },
+            { id: "D30", tramo: 3, name: "Andrés Bello / Gral. Calderón", latLng: [-33.42663, -70.62221], items: "• 4 Conos\n• 1 Barrera Auspicios\n• 1 Valla CALLE CERRADA" },
+            { id: "D31", tramo: 3, name: "Andrés Bello / Almte. Pastene", latLng: [-33.42813, -70.62272], items: "• 4 Conos" },
+            { id: "D32", tramo: 3, name: "Andrés Bello / Manuel Montt", latLng: [-33.42954, -70.62388], items: "• 3 Conos" },
+            { id: "D33", tramo: 3, name: "Andrés Bello / Pérez Valenzuela", latLng: [-33.43074, -70.62489], items: "• 2 Conos\n• 1 Barrera CicloRecreoVía" },
+            { id: "D34", tramo: 3, name: "Andrés Bello / Huelén", latLng: [-33.43222, -70.62626], items: "• 26 Conos\n• 3 Barreras CicloRecreoVía\n• 3 Vallas CALLE CERRADA" },
+            { id: "D35", tramo: 3, name: "Andrés Bello / Pte. Arzobispo", latLng: [-33.43433, -70.62924], items: "• 8 Conos\n• 2 Vallas CALLE CERRADA" },
+            { id: "D36", tramo: 3, name: "Andrés Bello / Pío Nono", latLng: [-33.43631, -70.63537], items: "• 15 Conos\n• 2 Vallas CALLE CERRADA\n• 1 Paleta PARE" },
+            { id: "D37", tramo: 3, name: "J.M. Caro / Purísima", latLng: [-33.43569, -70.63834], items: "• 14 Conos\n• 2 Vallas CALLE CERRADA" },
+            { id: "D38", tramo: 3, name: "J.M. Caro / J.M. de la Barra", latLng: [-33.43467, -70.64281], items: "• 6 Conos\n• 1 Barrera FIN CICLORECREOVIA" }
         ];
 
         let map, userMarker, markers = [];
@@ -233,10 +237,16 @@
         function renderStops() {
             const listEl = document.getElementById("route-list");
             listEl.innerHTML = "";
-            const polyCoords = [];
+
+            // Trazado dividido en 3 polígonos independientes para eliminar diagonales cruzadas
+            const lineTramo1 = [];
+            const lineTramo2 = [];
+            const lineTramo3 = [];
 
             stopsData.forEach((stop) => {
-                polyCoords.push(stop.latLng);
+                if (stop.tramo === 1) lineTramo1.push(stop.latLng);
+                if (stop.tramo === 2) lineTramo2.push(stop.latLng);
+                if (stop.tramo === 3) lineTramo3.push(stop.latLng);
 
                 const marker = L.circleMarker(stop.latLng, {
                     radius: 7,
@@ -260,7 +270,10 @@
                 listEl.appendChild(itemEl);
             });
 
-            L.polyline(polyCoords, { color: '#d32f2f', weight: 5, opacity: 0.9 }).addTo(map);
+            // Dibujar las 3 secciones continuas por separado
+            L.polyline(lineTramo1, { color: '#d32f2f', weight: 5, opacity: 0.9 }).addTo(map);
+            L.polyline(lineTramo2, { color: '#d32f2f', weight: 5, opacity: 0.9 }).addTo(map);
+            L.polyline(lineTramo3, { color: '#d32f2f', weight: 5, opacity: 0.9 }).addTo(map);
         }
 
         function selectStop(id) {
@@ -281,6 +294,14 @@
             document.getElementById("stop-title").innerText = stop.name;
             document.getElementById("materials-content").innerText = stop.items;
 
+            // Mueve el punto azul de ubicación al punto seleccionado
+            if (!userMarker) {
+                userMarker = L.circleMarker(stop.latLng, { radius: 9, fillColor: '#1976d2', color: '#fff', weight: 3, fillOpacity: 1 }).addTo(map);
+            } else {
+                userMarker.setLatLng(stop.latLng);
+            }
+
+            checkProximity(stop.latLng);
             map.panTo(stop.latLng);
         }
 
@@ -306,7 +327,6 @@
                     }
                     if (currentActiveStopId !== stop.id) {
                         currentActiveStopId = stop.id;
-                        selectStop(stop.id);
                     }
                 } else {
                     if (markerObj) {
@@ -360,13 +380,7 @@
                 simIndex = 0;
                 simInterval = setInterval(() => {
                     if (simIndex < stopsData.length) {
-                        const targetPt = stopsData[simIndex].latLng;
-                        if (!userMarker) {
-                            userMarker = L.circleMarker(targetPt, { radius: 9, fillColor: '#1976d2', color: '#fff', weight: 3, fillOpacity: 1 }).addTo(map);
-                        } else {
-                            userMarker.setLatLng(targetPt);
-                        }
-                        checkProximity(targetPt);
+                        selectStop(stopsData[simIndex].id);
                         simIndex++;
                     } else {
                         clearInterval(simInterval);
