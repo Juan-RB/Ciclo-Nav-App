@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,10 +8,28 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body, html { width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; background: #121212; color: #fff; }
-        #map { width: 100%; height: 100%; z-index: 1; }
-        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+            background: #121212;
+            color: #fff;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
         /* Panel Lateral Izquierdo: Ruta */
         #left-hud {
             position: absolute;
@@ -49,6 +68,41 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
         }
 
+        /* Modal/Panel Flotante de Edición (✏️) */
+        #edit-toolbar {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1100;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid #ff9800;
+            border-radius: 30px;
+            padding: 8px 16px;
+            display: none;
+            gap: 8px;
+            align-items: center;
+            box-shadow: 0 8px 24px rgba(255, 152, 0, 0.3);
+        }
+
+        .edit-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .edit-btn.active {
+            background: #ff9800;
+            color: #000;
+            border-color: #ff9800;
+        }
+
         .hud-header {
             font-size: 1rem;
             font-weight: 700;
@@ -77,15 +131,28 @@
             transition: all 0.2s ease;
         }
 
-        .route-item.here { 
-            border-left-color: #00E676; 
-            background: rgba(0, 230, 118, 0.25); 
+        .route-item.here {
+            border-left-color: #00E676;
+            background: rgba(0, 230, 118, 0.25);
             box-shadow: 0 0 10px rgba(0, 230, 118, 0.4);
         }
-        .route-item.selected { border-left-color: #ff9800; background: rgba(255, 152, 0, 0.25); }
 
-        .route-item-title { font-size: 0.85rem; font-weight: bold; color: #fff; }
-        .route-item-sub { font-size: 0.75rem; color: #bbb; }
+        .route-item.selected {
+            border-left-color: #ff9800;
+            background: rgba(255, 152, 0, 0.25);
+            font-weight: bold;
+        }
+
+        .route-item-title {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .route-item-sub {
+            font-size: 0.75rem;
+            color: #bbb;
+        }
 
         .materials-box {
             background: rgba(255, 152, 0, 0.1);
@@ -124,23 +191,60 @@
             font-weight: bold;
             cursor: pointer;
             font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        .btn-sec { background: rgba(255, 255, 255, 0.15); color: #fff; }
+        .btn-sec {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
 
         @media (max-width: 768px) {
-            #left-hud { width: 170px; font-size: 0.75rem; left: 8px; top: 8px; }
-            #right-hud { width: 170px; font-size: 0.75rem; right: 8px; top: 8px; }
+            #left-hud {
+                width: 170px;
+                font-size: 0.75rem;
+                left: 8px;
+                top: 8px;
+            }
+
+            #right-hud {
+                width: 170px;
+                font-size: 0.75rem;
+                right: 8px;
+                top: 8px;
+            }
+
+            #edit-toolbar {
+                width: 90%;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
         }
     </style>
 </head>
+
 <body>
+
+    <!-- Panel de Herramientas de Edición (✏️) -->
+    <div id="edit-toolbar">
+        <button class="edit-btn active" id="tool-move-pt" onclick="setEditMode('move-pt')">🎯 Mover Punto</button>
+        <button class="edit-btn" id="tool-move-route" onclick="setEditMode('move-route')">🛣️ Mover Ruta</button>
+        <button class="edit-btn" id="tool-add-pt" onclick="setEditMode('add-pt')">➕ Crear Punto</button>
+        <button class="edit-btn" id="tool-del-pt" onclick="setEditMode('del-pt')">🗑️ Borrar Punto</button>
+        <button class="edit-btn" style="background:#555; color:#fff;" onclick="undoChange()">↩️ Deshacer
+            (Ctrl+Z)</button>
+        <button class="edit-btn" style="background:#00E676; color:#000;" onclick="exportData()">💾 Copiar
+            Cambios</button>
+    </div>
 
     <!-- HUD Izquierdo: Lista de Paradas -->
     <div id="left-hud">
         <div class="hud-header">
             <span>📍 Paradas D1 - D38</span>
-            <span id="gps-status" style="font-size:0.7rem; color:#4caf50;">GPS...</span>
+            <button class="btn btn-sec" style="padding:2px 8px; font-size:0.75rem;" onclick="toggleEditToolbar()">✏️
+                Editar</button>
         </div>
         <div class="route-list" id="route-list"></div>
     </div>
@@ -155,7 +259,7 @@
         <div class="materials-box" id="materials-content">
             • 6 Conos
             • 2 Vallas "CALLE CERRADA"
-            
+
             ⚠️ Instrucción:
             1. Colocar 1 valla en Av. El Cerro con M. Carlos Casanueva.
             2. 3 conos en diagonal detrás del camión.
@@ -171,92 +275,207 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const stopsData = [
-            // TRAMO 1: Pedro de Valdivia Norte (D1 - D7)
-            { id: "D1", tramo: 1, name: "Av. El Cerro / PdV Norte", latLng: [-33.41547, -70.61740], items: "• 6 Conos\n• 2 Vallas 'CALLE CERRADA'\n\n💡 Instr: 1 valla en El Cerro c/ Casanueva. 3 conos en diagonal detrás del camión." },
-            { id: "D2", tramo: 1, name: "PdV Norte / Los Misioneros", latLng: [-33.41616, -70.61706], items: "• 4 Conos" },
-            { id: "D3", tramo: 1, name: "PdV Norte / Los Navegantes", latLng: [-33.41687, -70.61671], items: "• 4 Conos\n• 2 Vallas 'CALLE CERRADA'" },
-            { id: "D4", tramo: 1, name: "PdV Norte / El Comendador", latLng: [-33.41756, -70.61638], items: "• 4 Conos" },
-            { id: "D5", tramo: 1, name: "PdV Norte / Los Conquistadores", latLng: [-33.41820, -70.61606], items: "• 8 Conos\n• 2 Vallas 'CALLE CERRADA'\n• 1 Paleta PARE" },
-            { id: "D6", tramo: 1, name: "PdV Norte / Los Españoles", latLng: [-33.41911, -70.61561], items: "• 4 Conos" },
-            { id: "D7", tramo: 1, name: "PdV Norte / Santa María", latLng: [-33.42003, -70.61515], items: "• 5 Conos\n• 2 Vallas 'CALLE CERRADA'\n• 1 Valla 'Usuarios / Autos'\n• 1 Paleta PARE" },
+        let stopsData = [
+            { id: "D1", tramo: 1, name: "Av. El Cerro / PdV Norte", latLng: [-33.415477652810495, -70.61738938093187], items: "• 6 Conos\n• 2 Vallas 'CALLE CERRADA'\n\n💡 Instr: 1 valla en El Cerro c/ Casanueva. 3 conos en diagonal detrás del camión." },
+            { id: "D2", tramo: 1, name: "PdV Norte / Los Misioneros", latLng: [-33.41717691386758, -70.61657667160036], items: "• 4 Conos" },
+            { id: "D3", tramo: 1, name: "PdV Norte / Los Navegantes", latLng: [-33.41773884927249, -70.61629772186281], items: "• 4 Conos\n• 2 Vallas 'CALLE CERRADA'" },
+            { id: "D4", tramo: 1, name: "PdV Norte / El Comendador", latLng: [-33.418289587216535, -70.61601608991624], items: "• 4 Conos" },
+            { id: "D5", tramo: 1, name: "PdV Norte / Los Conquistadores", latLng: [-33.41919404357844, -70.61557888984682], items: "• 8 Conos\n• 2 Vallas 'CALLE CERRADA'\n• 1 Paleta PARE" },
+            { id: "D6", tramo: 1, name: "PdV Norte / Los Españoles", latLng: [-33.42005595485942, -70.61513096094133], items: "• 4 Conos" },
+            { id: "D7", tramo: 1, name: "PdV Norte / Santa María", latLng: [-33.420758909933234, -70.61480373144151], items: "• 5 Conos\n• 2 Vallas 'CALLE CERRADA'\n• 1 Valla 'Usuarios / Autos'\n• 1 Paleta PARE" },
 
-            // TRAMO 2: Andrés Bello Oriente / Subida Titanium (D8 - D24)
             { id: "D8", tramo: 2, name: "Andrés Bello / Pedro de Valdivia", latLng: [-33.42187, -70.61415], items: "• 20 Conos\n• 1 Barrera Auspicios\n• 1 Barrera CicloRecreoVía\n• 4 Vallas CALLE CERRADA\n• 1 Paleta PARE\n• 1 Tambor" },
-            { id: "D9", tramo: 2, name: "Andrés Bello / Orrego Luco", latLng: [-33.42128, -70.61287], items: "• 5 Conos" },
-            { id: "D10", tramo: 2, name: "Andrés Bello / Las Urbinas", latLng: [-33.42080, -70.61202], items: "• 5 Conos" },
-            { id: "D11", tramo: 2, name: "Andrés Bello / A. de Fuenzalida", latLng: [-33.42026, -70.61122], items: "• 2 Conos" },
-            { id: "D12", tramo: 2, name: "Andrés Bello / Ricardo Lyon", latLng: [-33.41977, -70.61054], items: "• 14 Conos\n• 1 Barrera Auspicios\n• 1 Valla CALLE CERRADA" },
-            { id: "D13", tramo: 2, name: "Andrés Bello / Sta. Magdalena", latLng: [-33.41942, -70.61010], items: "• 5 Conos" },
-            { id: "D14", tramo: 2, name: "Andrés Bello / General Holley", latLng: [-33.41919, -70.60982], items: "• 3 Conos" },
-            { id: "D15", tramo: 2, name: "Andrés Bello / Suecia", latLng: [-33.41883, -70.60943], items: "• 14 Conos\n• 1 Barrera Auspicios\n• 1 Paleta PARE" },
-            { id: "D16", tramo: 2, name: "General Holley / Bucarest", latLng: [-33.41871, -70.60931], items: "• 1 Barrera 'Calle Cerrada Sin Acceso a A. Bello'\n• 1 Barrera 'A CENCO Costanera por Suecia'" },
-            { id: "D17", tramo: 2, name: "Andrés Bello / Bucarest", latLng: [-33.41853, -70.60911], items: "• 4 Conos\n• 2 Vallas CALLE CERRADA" },
-            { id: "D18", tramo: 2, name: "Andrés Bello / Los Leones", latLng: [-33.41812, -70.60873], items: "• 27 Conos\n• 2 Vallas CALLE CERRADA\n• 25 Conectores\n• 1 Paleta PARE" },
-            { id: "D19", tramo: 2, name: "Andrés Bello / Entrada Jumbo", latLng: [-33.41786, -70.60848], items: "• 10 Conos" },
-            { id: "D20", tramo: 2, name: "Andrés Bello / Pórtico", latLng: [-33.41763, -70.60825], items: "• 10 Conos" },
-            { id: "D21", tramo: 2, name: "Andrés Bello / Escultura", latLng: [-33.41724, -70.60788], items: "• 10 Conos" },
-            { id: "D22", tramo: 2, name: "Andrés Bello / Nueva Tobalaba", latLng: [-33.41658, -70.60728], items: "• 22 Conos\n• 2 Vallas CALLE CERRADA\n• 1 Valla Usuario/Auto\n• 1 Paleta PARE" },
-            { id: "D23", tramo: 2, name: "Andrés Bello / Nueva Tajamar", latLng: [-33.41588, -70.60660], items: "• 32 Conos\n• 1 Barrera Desvío\n• 1 Barrera Calle Cerrada\n• 1 Barrera Dirección\n• 2 Vallas CALLE CERRADA\n• 1 Valla Usuarios/Autos" },
-            { id: "D24", tramo: 2, name: "Andrés Bello / Entrada Caletera (Titanium)", latLng: [-33.41475, -70.60551], items: "• 16 Conos\n• 1 Valla Máxima 40\n• 1 Valla Desvío 100M\n• 2 Barreras" },
+            { id: "D9", tramo: 2, name: "Andrés Bello / Orrego Luco", latLng: [-33.42162752171742, -70.61351358890535], items: "• 5 Conos" },
+            { id: "D10", tramo: 2, name: "Andrés Bello / Las Urbinas", latLng: [-33.421314106096325, -70.61284571886064], items: "• 5 Conos" },
+            { id: "D11", tramo: 2, name: "Andrés Bello / A. de Fuenzalida", latLng: [-33.42083054834732, -70.61203837394716], items: "• 2 Conos" },
+            { id: "D12", tramo: 2, name: "Andrés Bello / Ricardo Lyon", latLng: [-33.42024400709282, -70.61119347810747], items: "• 14 Conos\n• 1 Barrera Auspicios\n• 1 Valla CALLE CERRADA" },
+            { id: "D13", tramo: 2, name: "Andrés Bello / Sta. Magdalena", latLng: [-33.4196507456865, -70.61030298471452], items: "• 5 Conos" },
+            { id: "D14", tramo: 2, name: "Andrés Bello / General Holley", latLng: [-33.419238818401126, -70.60980141162874], items: "• 3 Conos" },
+            { id: "D15", tramo: 2, name: "Andrés Bello / Suecia", latLng: [-33.41889181292141, -70.60942590236665], items: "• 14 Conos\n• 1 Barrera Auspicios\n• 1 Paleta PARE" },
+            { id: "D16", tramo: 2, name: "General Holley / Bucarest", latLng: [-33.41995073497972, -70.6079211831093], items: "• 1 Barrera 'Calle Cerrada Sin Acceso a A. Bello'\n• 1 Barrera 'A CENCO Costanera por Suecia'" },
+            { id: "D17", tramo: 2, name: "Andrés Bello / Bucarest", latLng: [-33.41855152233005, -70.60909867286684], items: "• 4 Conos\n• 2 Vallas CALLE CERRADA" },
+            { id: "D18", tramo: 2, name: "Andrés Bello / Los Leones", latLng: [-33.41813735106099, -70.60873389244081], items: "• 27 Conos\n• 2 Vallas CALLE CERRADA\n• 25 Conectores\n• 1 Paleta PARE" },
+            { id: "D19", tramo: 2, name: "Andrés Bello / Entrada Jumbo", latLng: [-33.41775228194682, -70.60829401016237], items: "• 10 Conos" },
+            { id: "D20", tramo: 2, name: "Andrés Bello / Pórtico", latLng: [-33.41735153960197, -70.60792654752733], items: "• 10 Conos" },
+            { id: "D21", tramo: 2, name: "Andrés Bello / Escultura", latLng: [-33.41692392980898, -70.60754567384721], items: "• 10 Conos" },
+            { id: "D22", tramo: 2, name: "Andrés Bello / Nueva Tobalaba", latLng: [-33.416440347610695, -70.60709506273271], items: "• 22 Conos\n• 2 Vallas CALLE CERRADA\n• 1 Valla Usuario/Auto\n• 1 Paleta PARE" },
+            { id: "D23", tramo: 2, name: "Andrés Bello / Nueva Tajamar", latLng: [-33.41599930038736, -70.60670077800752], items: "• 32 Conos\n• 1 Barrera Desvío\n• 1 Barrera Calle Cerrada\n• 1 Barrera Dirección\n• 2 Vallas CALLE CERRADA\n• 1 Valla Usuarios/Autos" },
+            { id: "D24", tramo: 2, name: "Andrés Bello / Entrada Caletera (Titanium)", latLng: [-33.41475898299092, -70.60563057661058], items: "• 16 Conos\n• 1 Valla Máxima 40\n• 1 Valla Desvío 100M\n• 2 Barreras" },
 
-            // TRAMO 3: Andrés Bello Bajada / Cardenal Caro (D25 - D38)
-            { id: "D25", tramo: 3, name: "Andrés Bello / Francisco Noguera", latLng: [-33.42226, -70.61535], items: "• 24 Conos\n• 3 Vallas CALLE CERRADA\n• 10 Conectores" },
-            { id: "D26", tramo: 3, name: "Andrés Bello / M. Sótero Sánz", latLng: [-33.42263, -70.61612], items: "• 20 Conos" },
-            { id: "D27", tramo: 3, name: "Andrés Bello / La Concepción", latLng: [-33.42288, -70.61773], items: "• 12 Conos\n• 1 Barrera Auspicios\n• 1 Paleta PARE" },
-            { id: "D28", tramo: 3, name: "Andrés Bello / Padre Mariano", latLng: [-33.42347, -70.61926], items: "• 5 Conos\n• 1 Valla CALLE CERRADA" },
-            { id: "D29", tramo: 3, name: "Andrés Bello / Antonio Bellet", latLng: [-33.42421, -70.62061], items: "• 7 Conos\n• 1 Valla CALLE CERRADA\n\n💡 Cerrar salida sur y armar curva en calzada norte." },
-            { id: "D30", tramo: 3, name: "Andrés Bello / Gral. Calderón", latLng: [-33.42663, -70.62221], items: "• 4 Conos\n• 1 Barrera Auspicios\n• 1 Valla CALLE CERRADA" },
-            { id: "D31", tramo: 3, name: "Andrés Bello / Almte. Pastene", latLng: [-33.42813, -70.62272], items: "• 4 Conos" },
-            { id: "D32", tramo: 3, name: "Andrés Bello / Manuel Montt", latLng: [-33.42954, -70.62388], items: "• 3 Conos" },
-            { id: "D33", tramo: 3, name: "Andrés Bello / Pérez Valenzuela", latLng: [-33.43074, -70.62489], items: "• 2 Conos\n• 1 Barrera CicloRecreoVía" },
-            { id: "D34", tramo: 3, name: "Andrés Bello / Huelén", latLng: [-33.43222, -70.62626], items: "• 26 Conos\n• 3 Barreras CicloRecreoVía\n• 3 Vallas CALLE CERRADA" },
-            { id: "D35", tramo: 3, name: "Andrés Bello / Pte. Arzobispo", latLng: [-33.43433, -70.62924], items: "• 8 Conos\n• 2 Vallas CALLE CERRADA" },
-            { id: "D36", tramo: 3, name: "Andrés Bello / Pío Nono", latLng: [-33.43631, -70.63537], items: "• 15 Conos\n• 2 Vallas CALLE CERRADA\n• 1 Paleta PARE" },
-            { id: "D37", tramo: 3, name: "J.M. Caro / Purísima", latLng: [-33.43569, -70.63834], items: "• 14 Conos\n• 2 Vallas CALLE CERRADA" },
-            { id: "D38", tramo: 3, name: "J.M. Caro / J.M. de la Barra", latLng: [-33.43467, -70.64281], items: "• 6 Conos\n• 1 Barrera FIN CICLORECREOVIA" }
+            { id: "D25", tramo: 3, name: "Andrés Bello / Francisco Noguera", latLng: [-33.42205286967926, -70.61477690935136], items: "• 24 Conos\n• 3 Vallas CALLE CERRADA\n• 10 Conectores" },
+            { id: "D26", tramo: 3, name: "Andrés Bello / M. Sótero Sánz", latLng: [-33.42244015837938, -70.61620920896532], items: "• 20 Conos" },
+            { id: "D27", tramo: 3, name: "Andrés Bello / La Concepción", latLng: [-33.42286326371293, -70.61772733926774], items: "• 12 Conos\n• 1 Barrera Auspicios\n• 1 Paleta PARE" },
+            { id: "D28", tramo: 3, name: "Andrés Bello / Padre Mariano", latLng: [-33.4233400942365, -70.61886459589006], items: "• 5 Conos\n• 1 Valla CALLE CERRADA" },
+            { id: "D29", tramo: 3, name: "Andrés Bello / Antonio Bellet", latLng: [-33.423866171822475, -70.61999648809434], items: "• 7 Conos\n• 1 Valla CALLE CERRADA\n\n💡 Cerrar salida sur y armar curva en calzada norte." },
+            { id: "D30", tramo: 3, name: "Andrés Bello / Gral. Calderón", latLng: [-33.42506158733564, -70.62150925397874], items: "• 4 Conos\n• 1 Barrera Auspicios\n• 1 Valla CALLE CERRADA" },
+            { id: "D31", tramo: 3, name: "Andrés Bello / Almte. Pastene", latLng: [-33.426133865522964, -70.62199205160142], items: "• 4 Conos" },
+            { id: "D32", tramo: 3, name: "Andrés Bello / Manuel Montt", latLng: [-33.42750385512488, -70.62252312898637], items: "• 3 Conos" },
+            { id: "D33", tramo: 3, name: "Andrés Bello / Pérez Valenzuela", latLng: [-33.42895217029328, -70.6231588125229], items: "• 2 Conos\n• 1 Barrera CicloRecreoVía" },
+            { id: "D34", tramo: 3, name: "Andrés Bello / Huelén", latLng: [-33.43017437727487, -70.62445968389513], items: "• 26 Conos\n• 3 Barreras CicloRecreoVía\n• 3 Vallas CALLE CERRADA" },
+            { id: "D35", tramo: 3, name: "Andrés Bello / Pte. Arzobispo", latLng: [-33.43185768179198, -70.62586516141893], items: "• 8 Conos\n• 2 Vallas CALLE CERRADA" },
+            { id: "D36", tramo: 3, name: "Andrés Bello / Pío Nono", latLng: [-33.436383639205296, -70.63532531261446], items: "• 15 Conos\n• 2 Vallas CALLE CERRADA\n• 1 Paleta PARE" },
+            { id: "D37", tramo: 3, name: "J.M. Caro / Purísima", latLng: [-33.435602469543326, -70.6389543414116], items: "• 14 Conos\n• 2 Vallas CALLE CERRADA" },
+            { id: "D38", tramo: 3, name: "J.M. Caro / J.M. de la Barra", latLng: [-33.43466684734058, -70.64285695552827], items: "• 6 Conos\n• 1 Barrera FIN CICLORECREOVIA" }
         ];
 
-        let map, userMarker, markers = [];
+        let routeWaypoints = {
+            "D35-D36": [[-33.433343976724984, -70.62754690647127], [-33.43402891732772, -70.62851250171663], [-33.436213528359225, -70.63320368528368], [-33.43640826048433, -70.63402712345125]],
+            "D1-D2": [[-33.41632728333904, -70.61698302626611]],
+            "D2-D3": [[-33.41745788157003, -70.61643719673158]],
+            "D3-D4": [[-33.41801421824451, -70.61615690588953]],
+            "D4-D5": [[-33.41874181539749, -70.61579748988153]],
+            "D5-D6": [[-33.41962499921893, -70.61535492539407]],
+            "D6-D7": [[-33.42040743239633, -70.61496734619142]],
+            "D7-D8": [[-33.42131445496662, -70.61447686572075]],
+            "D8-D9": [[-33.421748760858705, -70.61383179445266]],
+            "D9-D10": [[-33.42147081390687, -70.613179653883]],
+            "D10-D11": [[-33.42107232722182, -70.6124420464039]],
+            "D11-D12": [[-33.42053727772007, -70.61161592602731]],
+            "D12-D13": [[-33.41994737638966, -70.610748231411]],
+            "D13-D14": [[-33.41944478204381, -70.61005219817163]],
+            "D14-D15": [[-33.41906531566127, -70.6096136569977]],
+            "D15-D16": [[-33.42025520066531, -70.60847103595735]],
+            "D16-D17": [[-33.419594777420045, -70.60751348733903]],
+            "D17-D18": [[-33.41834443669552, -70.60891628265382]],
+            "D18-D19": [[-33.417944816503905, -70.60851395130159]],
+            "D19-D20": [[-33.41755191077439, -70.60811027884485]],
+            "D20-D21": [[-33.41713773470548, -70.60773611068727]],
+            "D21-D22": [[-33.41668213870984, -70.60732036828996]],
+            "D22-D23": [[-33.41621982399903, -70.60689792037012]],
+            "D23-D24": [[-33.415379141689144, -70.60616567730905]],
+            "D25-D26": [[-33.422246514029325, -70.61549305915834]],
+            "D26-D27": [[-33.42265171104616, -70.61696827411653]],
+            "D27-D28": [[-33.42310167897472, -70.6182959675789]],
+            "D28-D29": [[-33.42360313302949, -70.6194305419922]],
+            "D29-D30": [[-33.42477057009365, -70.6213027238846]],
+            "D30-D31": [[-33.4255977264293, -70.62175065279008]],
+            "D31-D32": [[-33.42681886032392, -70.6222575902939]],
+            "D32-D33": [[-33.428228012709084, -70.62284097075464]],
+            "D33-D34": [[-33.42967519957946, -70.62400639057161]],
+            "D34-D35": [[-33.43114138598787, -70.62521606683733]],
+            "D36-D37": [[-33.43634111152503, -70.63584834337236], [-33.43588673553507, -70.63776344060899]],
+            "D37-D38": [[-33.43529059547574, -70.64025521278383], [-33.434978721408164, -70.64155608415605]]
+        };
+
+        let undoStack = [];
+        let map, userMarker, markers = [], routeVectorMarkers = [], lines = [];
+        let editMode = 'move-pt';
+        let isEditingToolbarOpen = false;
         let simInterval = null, simIndex = 0;
-        let currentActiveStopId = null;
+
+        function saveState() {
+            undoStack.push(JSON.stringify({
+                stops: stopsData,
+                waypoints: routeWaypoints
+            }));
+            if (undoStack.length > 30) undoStack.shift();
+        }
+
+        function undoChange() {
+            if (undoStack.length > 0) {
+                const previousState = JSON.parse(undoStack.pop());
+                stopsData = previousState.stops;
+                routeWaypoints = previousState.waypoints;
+                renderStops();
+            } else {
+                alert("No hay más acciones para deshacer.");
+            }
+        }
 
         function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([-33.420, -70.612], 14);
-            
+            map = L.map('map', { zoomControl: false }).setView([-33.422, -70.618], 15);
+
+            map.createPane('userPane');
+            map.getPane('userPane').style.zIndex = 1000;
+
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 19,
                 attribution: 'Esri'
             }).addTo(map);
+
+            window.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+                    e.preventDefault();
+                    undoChange();
+                }
+            });
+
+            map.on('click', (e) => {
+                if (isEditingToolbarOpen && editMode === 'add-pt') {
+                    saveState();
+                    const newId = `D${stopsData.length + 1}`;
+                    const newStop = {
+                        id: newId,
+                        tramo: 3,
+                        name: `Punto Nuevo (${newId})`,
+                        latLng: [e.latlng.lat, e.latlng.lng],
+                        items: "• Materiales por definir"
+                    };
+                    stopsData.push(newStop);
+                    renderStops();
+                }
+            });
 
             renderStops();
             selectStop("D1");
             startGPS();
         }
 
+        function toggleEditToolbar() {
+            isEditingToolbarOpen = !isEditingToolbarOpen;
+            document.getElementById("edit-toolbar").style.display = isEditingToolbarOpen ? 'flex' : 'none';
+            renderStops();
+        }
+
+        function setEditMode(mode) {
+            editMode = mode;
+            document.querySelectorAll('.edit-btn').forEach(btn => btn.classList.remove('active'));
+            if (mode === 'move-pt') document.getElementById('tool-move-pt').classList.add('active');
+            if (mode === 'move-route') document.getElementById('tool-move-route').classList.add('active');
+            if (mode === 'add-pt') document.getElementById('tool-add-pt').classList.add('active');
+            if (mode === 'del-pt') document.getElementById('tool-del-pt').classList.add('active');
+            renderStops();
+        }
+
         function renderStops() {
             const listEl = document.getElementById("route-list");
             listEl.innerHTML = "";
 
-            // Trazado dividido en 3 polígonos independientes para eliminar diagonales cruzadas
-            const lineTramo1 = [];
-            const lineTramo2 = [];
-            const lineTramo3 = [];
+            markers.forEach(m => map.removeLayer(m.marker));
+            routeVectorMarkers.forEach(m => map.removeLayer(m));
+            markers = [];
+            routeVectorMarkers = [];
 
-            stopsData.forEach((stop) => {
-                if (stop.tramo === 1) lineTramo1.push(stop.latLng);
-                if (stop.tramo === 2) lineTramo2.push(stop.latLng);
-                if (stop.tramo === 3) lineTramo3.push(stop.latLng);
+            stopsData.forEach((stop, index) => {
+                const isDraggable = isEditingToolbarOpen && editMode === 'move-pt';
 
-                const marker = L.circleMarker(stop.latLng, {
-                    radius: 7,
-                    fillColor: '#d32f2f',
-                    color: '#fff',
-                    weight: 2,
-                    fillOpacity: 0.9
+                const marker = L.marker(stop.latLng, {
+                    draggable: isDraggable,
+                    icon: L.divIcon({
+                        className: 'custom-pin',
+                        html: `<div style="background:${isDraggable ? '#ff9800' : '#d32f2f'}; width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 4px #000;"></div>`,
+                        iconSize: [14, 14],
+                        iconAnchor: [7, 7]
+                    })
                 }).addTo(map);
 
-                marker.on('click', () => selectStop(stop.id));
+                marker.on('dragstart', () => saveState());
+                marker.on('drag', (e) => {
+                    const pos = e.target.getLatLng();
+                    stop.latLng = [pos.lat, pos.lng];
+                    updatePolylines();
+                });
+
+                marker.on('click', () => {
+                    if (isEditingToolbarOpen && editMode === 'del-pt') {
+                        saveState();
+                        stopsData.splice(index, 1);
+                        renderStops();
+                    } else {
+                        selectStop(stop.id);
+                    }
+                });
+
                 markers.push({ id: stop.id, marker });
 
                 const itemEl = document.createElement("div");
@@ -270,22 +489,73 @@
                 listEl.appendChild(itemEl);
             });
 
-            // Dibujar las 3 secciones continuas por separado
-            L.polyline(lineTramo1, { color: '#d32f2f', weight: 5, opacity: 0.9 }).addTo(map);
-            L.polyline(lineTramo2, { color: '#d32f2f', weight: 5, opacity: 0.9 }).addTo(map);
-            L.polyline(lineTramo3, { color: '#d32f2f', weight: 5, opacity: 0.9 }).addTo(map);
+            if (isEditingToolbarOpen && editMode === 'move-route') {
+                Object.keys(routeWaypoints).forEach((pairKey) => {
+                    const wpList = routeWaypoints[pairKey];
+                    wpList.forEach((wp, wIdx) => {
+                        const wpMarker = L.marker(wp, {
+                            draggable: true,
+                            icon: L.divIcon({
+                                className: 'vector-pin',
+                                html: `<div style="background:#00E676; width:12px; height:12px; border-radius:3px; border:2px solid #000;"></div>`,
+                                iconSize: [12, 12],
+                                iconAnchor: [6, 6]
+                            })
+                        }).addTo(map);
+
+                        wpMarker.on('dragstart', () => saveState());
+                        wpMarker.on('drag', (e) => {
+                            const pos = e.target.getLatLng();
+                            routeWaypoints[pairKey][wIdx] = [pos.lat, pos.lng];
+                            updatePolylines();
+                        });
+
+                        routeVectorMarkers.push(wpMarker);
+                    });
+                });
+            }
+
+            updatePolylines();
+        }
+
+        function updatePolylines() {
+            lines.forEach(l => map.removeLayer(l));
+            lines = [];
+
+            const lineT1 = [];
+            const lineT2 = [];
+            const lineT3 = [];
+
+            for (let i = 0; i < stopsData.length; i++) {
+                const stop = stopsData[i];
+                let targetLine = lineT1;
+                if (stop.tramo === 2) targetLine = lineT2;
+                if (stop.tramo === 3) targetLine = lineT3;
+
+                targetLine.push(stop.latLng);
+
+                if (i < stopsData.length - 1) {
+                    const next = stopsData[i + 1];
+                    const pairKey = `${stop.id}-${next.id}`;
+                    if (routeWaypoints[pairKey]) {
+                        routeWaypoints[pairKey].forEach(wp => targetLine.push(wp));
+                    }
+                }
+            }
+
+            lines.push(L.polyline(lineT1, { color: '#d32f2f', weight: 5, opacity: 0.9 }).addTo(map));
+            lines.push(L.polyline(lineT2, { color: '#d32f2f', weight: 5, opacity: 0.9 }).addTo(map));
+            lines.push(L.polyline(lineT3, { color: '#d32f2f', weight: 5, opacity: 0.9 }).addTo(map));
+            lines.push(L.polyline([stopsData[6].latLng, stopsData[7].latLng], { color: '#d32f2f', weight: 5, opacity: 0.9 }).addTo(map));
         }
 
         function selectStop(id) {
             const stop = stopsData.find(s => s.id === id);
             if (!stop) return;
 
-            document.querySelectorAll('.route-item').forEach(el => {
-                if (!el.classList.contains('here')) el.classList.remove('selected');
-            });
-
+            document.querySelectorAll('.route-item').forEach(el => el.classList.remove('selected'));
             const selEl = document.getElementById(`item-${id}`);
-            if (selEl && !selEl.classList.contains('here')) {
+            if (selEl) {
                 selEl.classList.add('selected');
                 selEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
@@ -294,57 +564,32 @@
             document.getElementById("stop-title").innerText = stop.name;
             document.getElementById("materials-content").innerText = stop.items;
 
-            // Mueve el punto azul de ubicación al punto seleccionado
-            if (!userMarker) {
-                userMarker = L.circleMarker(stop.latLng, { radius: 9, fillColor: '#1976d2', color: '#fff', weight: 3, fillOpacity: 1 }).addTo(map);
-            } else {
-                userMarker.setLatLng(stop.latLng);
-            }
-
-            checkProximity(stop.latLng);
+            updateUserMarkerPosition(stop.latLng);
             map.panTo(stop.latLng);
         }
 
-        function checkProximity(userLatLng) {
-            stopsData.forEach((stop) => {
-                const dist = map.distance(userLatLng, stop.latLng);
-                const markerObj = markers.find(m => m.id === stop.id);
-                const itemEl = document.getElementById(`item-${stop.id}`);
-                const subEl = document.getElementById(`sub-${stop.id}`);
+        function updateUserMarkerPosition(latLng) {
+            if (!userMarker) {
+                userMarker = L.circleMarker(latLng, {
+                    radius: 10,
+                    fillColor: '#007bff',
+                    color: '#ffffff',
+                    weight: 3,
+                    fillOpacity: 1,
+                    pane: 'userPane'
+                }).addTo(map);
+            } else {
+                userMarker.setLatLng(latLng);
+            }
+        }
 
-                if (dist <= 40) {
-                    if (markerObj) {
-                        markerObj.marker.setStyle({
-                            fillColor: '#00E676',
-                            color: '#ffffff',
-                            radius: 11,
-                            fillOpacity: 1
-                        });
-                    }
-                    if (itemEl) {
-                        itemEl.classList.add('here');
-                        if (subEl) subEl.innerText = "📍 ESTÁS AQUÍ";
-                    }
-                    if (currentActiveStopId !== stop.id) {
-                        currentActiveStopId = stop.id;
-                    }
-                } else {
-                    if (markerObj) {
-                        markerObj.marker.setStyle({
-                            fillColor: '#d32f2f',
-                            color: '#ffffff',
-                            radius: 7,
-                            fillOpacity: 0.9
-                        });
-                    }
-                    if (itemEl) {
-                        itemEl.classList.remove('here');
-                        if (subEl && subEl.innerText === "📍 ESTÁS AQUÍ") {
-                            subEl.innerText = "Toca para ver descarga";
-                        }
-                    }
-                }
-            });
+        function exportData() {
+            const dataToExport = {
+                stops: stopsData,
+                waypoints: routeWaypoints
+            };
+            navigator.clipboard.writeText(JSON.stringify(dataToExport, null, 2));
+            alert("¡Cambios de ruta y puntos copiados al portapapeles!");
         }
 
         function startGPS() {
@@ -353,14 +598,7 @@
                     (pos) => {
                         const userLatLng = [pos.coords.latitude, pos.coords.longitude];
                         document.getElementById("gps-status").innerText = "GPS Ok";
-
-                        if (!userMarker) {
-                            userMarker = L.circleMarker(userLatLng, { radius: 9, fillColor: '#1976d2', color: '#fff', weight: 3, fillOpacity: 1 }).addTo(map);
-                        } else {
-                            userMarker.setLatLng(userLatLng);
-                        }
-
-                        checkProximity(userLatLng);
+                        updateUserMarkerPosition(userLatLng);
                     },
                     () => { document.getElementById("gps-status").innerText = "Sin GPS"; },
                     { enableHighAccuracy: true }
@@ -393,4 +631,5 @@
         window.onload = initMap;
     </script>
 </body>
+
 </html>
